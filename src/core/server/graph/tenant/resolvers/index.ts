@@ -29,6 +29,7 @@ import { Mutation } from "./Mutation";
 import { OIDCAuthIntegration } from "./OIDCAuthIntegration";
 import { Profile } from "./Profile";
 import { Query } from "./Query";
+import { RecentCommentHistory } from "./RecentCommentHistory";
 import { RejectCommentPayload } from "./RejectCommentPayload";
 import { Story } from "./Story";
 import { StorySettings } from "./StorySettings";
@@ -37,6 +38,8 @@ import { SuspensionStatus } from "./SuspensionStatus";
 import { SuspensionStatusHistory } from "./SuspensionStatusHistory";
 import { Tag } from "./Tag";
 import { User } from "./User";
+import { UsernameHistory } from "./UsernameHistory";
+import { UsernameStatus } from "./UsernameStatus";
 import { UserStatus } from "./UserStatus";
 
 const Resolvers: GQLResolver = {
@@ -68,16 +71,19 @@ const Resolvers: GQLResolver = {
   OIDCAuthIntegration,
   Profile,
   Query,
+  RecentCommentHistory,
   RejectCommentPayload,
   Story,
   StorySettings,
   Subscription,
   SuspensionStatus,
   SuspensionStatusHistory,
+  UsernameHistory,
   Tag,
   Time,
   User,
   UserStatus,
+  UsernameStatus,
 };
 
 export default Resolvers;

@@ -22,25 +22,23 @@ import {
   GQLSuspensionStatus,
   GQLTimeRange,
   GQLUSER_ROLE,
+  GQLUsernameStatus,
 } from "coral-server/graph/tenant/schema/__generated__/types";
 import logger from "coral-server/logger";
 import {
   Connection,
   ConnectionInput,
-  resolveConnection,
-} from "coral-server/models/helpers/connection";
-import {
+  createCollection,
   createConnectionOrderVariants,
   createIndexFactory,
-} from "coral-server/models/helpers/indexing";
-import Query from "coral-server/models/helpers/query";
+  Query,
+  resolveConnection,
+} from "coral-server/models/helpers";
 import { TenantResource } from "coral-server/models/tenant";
 
 import { getLocalProfile, hasLocalProfile } from "./helpers";
 
-function collection(mongo: Db) {
-  return mongo.collection<Readonly<User>>("users");
-}
+const collection = createCollection<User>("users");
 
 export interface LocalProfile {
   type: "local";
@@ -204,6 +202,36 @@ export interface BanStatus {
   history: BanStatusHistory[];
 }
 
+export interface UsernameHistory {
+  /**
+   * id is a specific reference for a particular username history that will be
+   * used internally to update username records.
+   */
+  id: string;
+
+  /**
+   * username is the username that was assigned
+   */
+  username: string;
+
+  /**
+   * createdBy is the user that created this username
+   */
+  createdBy: string;
+
+  /**
+   * createdAt is the time the username was created
+   */
+  createdAt: Date;
+}
+
+export interface UsernameStatus {
+  /**
+   * history is the list of all usernames for this user
+   */
+  history: UsernameHistory[];
+}
+
 /**
  * UserStatus stores the user status information regarding moderation state.
  */
@@ -218,6 +246,11 @@ export interface UserStatus {
    * ban stores the user ban status as well as the history of changes.
    */
   ban: BanStatus;
+
+  /**
+   * username stores the history of username changes for this user.
+   */
+  username: UsernameStatus;
 }
 
 /**
@@ -260,6 +293,12 @@ export interface User extends TenantResource {
   email?: string;
 
   /**
+   *
+   * badges are user display badges
+   */
+  badges?: string[];
+
+  /**
    * emailVerificationID is used to store state regarding the verification state
    * of an email address to prevent replay attacks.
    */
@@ -294,6 +333,12 @@ export interface User extends TenantResource {
    * ignoredUsers stores the users that have been ignored by this User.
    */
   ignoredUsers: IgnoredUser[];
+
+  /**
+   * lastDownloadedAt is the last time the user requested to download their
+   * user data.
+   */
+  lastDownloadedAt?: Date;
 
   /**
    * createdAt is the time that the User was created at.
@@ -404,11 +449,23 @@ export async function insertUser(
     tokens: [],
     ignoredUsers: [],
     status: {
+      username: {
+        history: [],
+      },
       suspension: { history: [] },
       ban: { active: false, history: [] },
     },
     createdAt: now,
   };
+
+  if (input.username) {
+    defaults.status.username.history.push({
+      id: uuid.v4(),
+      username: input.username,
+      createdBy: id,
+      createdAt: now,
+    });
+  }
 
   // Guard against empty login profiles (they need some way to login).
   if (input.profiles.length === 0) {
@@ -617,6 +674,8 @@ export async function updateUserPassword(
 export interface UpdateUserInput {
   email?: string;
   username?: string;
+  badges?: string[];
+  role?: GQLUSER_ROLE;
 }
 
 export async function updateUserFromSSO(
@@ -626,7 +685,7 @@ export async function updateUserFromSSO(
   update: UpdateUserInput,
   lastIssuedAt: Date
 ) {
-  // Update the user with the new password.
+  // Update the user with the new properties.
   const result = await collection(mongo).findOneAndUpdate(
     {
       tenantID,
@@ -716,30 +775,38 @@ export async function setUserUsername(
 }
 
 /**
- * updateUserUsername will set the username of the User.
+ * updateUsername will set the username of the User.
  *
  * @param mongo the database handle
  * @param tenantID the ID to the Tenant
  * @param id the ID of the User where we are setting the username on
  * @param username the username that we want to set
+ * @param createdBy the user making the change
  */
+
 export async function updateUserUsername(
   mongo: Db,
   tenantID: string,
   id: string,
-  username: string
+  username: string,
+  createdBy: string,
+  now = new Date()
 ) {
-  // TODO: (wyattjoh) investigate adding the username previously used to an array.
+  const usernameHistory: UsernameHistory = {
+    id: uuid(),
+    username,
+    createdBy,
+    createdAt: now,
+  };
 
-  // The username wasn't found, so add it to the user.
   const result = await collection(mongo).findOneAndUpdate(
-    {
-      tenantID,
-      id,
-    },
+    { id, tenantID },
     {
       $set: {
         username,
+      },
+      $push: {
+        "status.username.history": usernameHistory,
       },
     },
     {
@@ -748,8 +815,8 @@ export async function updateUserUsername(
       returnOriginal: false,
     }
   );
+
   if (!result.value) {
-    // Try to get the current user to discover what happened.
     const user = await retrieveUser(mongo, tenantID, id);
     if (!user) {
       throw new UserNotFoundError(id);
@@ -830,53 +897,53 @@ export async function setUserEmail(
  * @param tenantID the Tenant ID of the Tenant where the User exists
  * @param id the User ID that we are updating
  * @param emailAddress email address that we are setting on the User
+ * @param emailVerified whether email is verified
  */
 export async function updateUserEmail(
   mongo: Db,
   tenantID: string,
   id: string,
-  emailAddress: string
+  emailAddress: string,
+  emailVerified = false
 ) {
   // Lowercase the email address.
   const email = emailAddress.toLowerCase();
 
-  // Search to see if this email has been used before.
-  let user = await collection(mongo).findOne({
-    tenantID,
-    email,
-  });
-  if (user) {
-    throw new DuplicateEmailError(email);
-  }
-
-  // The email wasn't found, so try to update the User.
-  const result = await collection(mongo).findOneAndUpdate(
-    {
-      tenantID,
-      id,
-    },
-    {
-      $set: {
-        email,
+  try {
+    // The email wasn't found, so try to update the User.
+    const result = await collection(mongo).findOneAndUpdate(
+      {
+        tenantID,
+        id,
       },
-    },
-    {
-      // False to return the updated document instead of the original
-      // document.
-      returnOriginal: false,
-    }
-  );
-  if (!result.value) {
-    // Try to get the current user to discover what happened.
-    user = await retrieveUser(mongo, tenantID, id);
-    if (!user) {
-      throw new UserNotFoundError(id);
-    }
+      {
+        $set: {
+          email,
+          emailVerified,
+          "profiles.$[profiles].id": email,
+        },
+      },
+      {
+        arrayFilters: [{ "profiles.type": "local" }],
+        returnOriginal: false,
+      }
+    );
+    if (!result.value) {
+      // Try to get the current user to discover what happened.
+      const user = await retrieveUser(mongo, tenantID, id);
+      if (!user) {
+        throw new UserNotFoundError(id);
+      }
 
-    throw new Error("an unexpected error occurred");
+      throw new Error("an unexpected error occurred");
+    }
+    return result.value;
+  } catch (err) {
+    if (err instanceof MongoError && err.code === 11000) {
+      throw new DuplicateEmailError(email!);
+    }
+    throw err;
   }
-
-  return result.value;
 }
 
 /**
@@ -1418,6 +1485,15 @@ export async function removeActiveUserSuspensions(
 export type ConsolidatedBanStatus = Omit<GQLBanStatus, "history"> &
   Pick<BanStatus, "history">;
 
+export type ConsolidatedUsernameStatus = Omit<GQLUsernameStatus, "history"> &
+  Pick<UsernameStatus, "history">;
+
+export function consolidateUsernameStatus(
+  username: User["status"]["username"]
+): ConsolidatedUsernameStatus {
+  return username;
+}
+
 export function consolidateUserBanStatus(
   ban: User["status"]["ban"]
 ): ConsolidatedBanStatus {
@@ -1790,6 +1866,39 @@ export async function removeUserIgnore(
     ) {
       // TODO: improve error
       throw new Error("user already not ignored");
+    }
+
+    throw new Error("an unexpected error occurred");
+  }
+
+  return result.value;
+}
+
+export async function setUserLastDownloadedAt(
+  mongo: Db,
+  tenantID: string,
+  id: string,
+  now: Date
+) {
+  const result = await collection(mongo).findOneAndUpdate(
+    {
+      id,
+      tenantID,
+    },
+    {
+      $set: { lastDownloadedAt: now },
+    },
+    {
+      // False to return the updated document instead of the original
+      // document.
+      returnOriginal: false,
+    }
+  );
+  if (!result.value) {
+    // Get the user so we can figure out why the ignore operation failed.
+    const user = await retrieveUser(mongo, tenantID, id);
+    if (!user) {
+      throw new UserNotFoundError(id);
     }
 
     throw new Error("an unexpected error occurred");

@@ -50,4 +50,7 @@ export const ERROR_TRANSLATIONS: Record<ERROR_CODES, string> = {
   INVITE_REQUIRES_EMAIL_ADDRESSES: "error-inviteRequiresEmailAddresses",
   LIVE_UPDATES_DISABLED: "error-liveUpdatesDisabled",
   PASSWORD_INCORRECT: "error-passwordIncorrect",
+  USERNAME_UPDATED_WITHIN_WINDOW: "error-usernameAlreadyUpdated",
+  PERSISTED_QUERY_NOT_FOUND: "error-persistedQueryNotFound",
+  RAW_QUERY_NOT_AUTHORIZED: "error-rawQueryNotAuthorized",
 };

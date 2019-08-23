@@ -10,15 +10,18 @@ import {
   removeBan,
   removeIgnore,
   removeSuspension,
+  requestCommentsDownload,
   setEmail,
   setPassword,
   setUsername,
   suspend,
   updateAvatar,
   updateEmail,
+  updateEmailByID,
   updatePassword,
   updateRole,
   updateUsername,
+  updateUsernameByID,
 } from "coral-server/services/users";
 import { invite } from "coral-server/services/users/auth/invite";
 
@@ -31,13 +34,16 @@ import {
   GQLRemoveUserBanInput,
   GQLRemoveUserIgnoreInput,
   GQLRemoveUserSuspensionInput,
+  GQLRequestCommentsDownloadInput,
   GQLSetEmailInput,
   GQLSetPasswordInput,
   GQLSetUsernameInput,
   GQLSuspendUserInput,
+  GQLUpdateEmailInput,
   GQLUpdatePasswordInput,
   GQLUpdateUserAvatarInput,
   GQLUpdateUserEmailInput,
+  GQLUpdateUsernameInput,
   GQLUpdateUserRoleInput,
   GQLUpdateUserUsernameInput,
 } from "../schema/__generated__/types";
@@ -118,10 +124,36 @@ export const Users = (ctx: TenantContext) => ({
     ),
   deactivateToken: async (input: GQLDeactivateTokenInput) =>
     deactivateToken(ctx.mongo, ctx.tenant, ctx.user!, input.id),
+  updateUsername: async (input: GQLUpdateUsernameInput) =>
+    updateUsername(
+      ctx.mongo,
+      ctx.mailerQueue,
+      ctx.tenant,
+      ctx.user!,
+      input.username,
+      ctx.now
+    ),
   updateUserUsername: async (input: GQLUpdateUserUsernameInput) =>
-    updateUsername(ctx.mongo, ctx.tenant, input.userID, input.username),
+    updateUsernameByID(
+      ctx.mongo,
+      ctx.tenant,
+      input.userID,
+      input.username,
+      ctx.user!
+    ),
   updateUserEmail: async (input: GQLUpdateUserEmailInput) =>
-    updateEmail(ctx.mongo, ctx.tenant, input.userID, input.email),
+    updateEmailByID(ctx.mongo, ctx.tenant, input.userID, input.email),
+  updateEmail: async (input: GQLUpdateEmailInput) =>
+    updateEmail(
+      ctx.mongo,
+      ctx.tenant,
+      ctx.mailerQueue,
+      ctx.config,
+      ctx.signingConfig!,
+      ctx.user!,
+      input.email,
+      input.password
+    ),
   updateUserAvatar: async (input: GQLUpdateUserAvatarInput) =>
     updateAvatar(ctx.mongo, ctx.tenant, input.userID, input.avatar),
   updateUserRole: async (input: GQLUpdateUserRoleInput) =>
@@ -155,4 +187,14 @@ export const Users = (ctx: TenantContext) => ({
     ignore(ctx.mongo, ctx.tenant, ctx.user!, input.userID, ctx.now),
   removeIgnore: async (input: GQLRemoveUserIgnoreInput) =>
     removeIgnore(ctx.mongo, ctx.tenant, ctx.user!, input.userID),
+  requestCommentsDownload: async (input: GQLRequestCommentsDownloadInput) =>
+    requestCommentsDownload(
+      ctx.mongo,
+      ctx.mailerQueue,
+      ctx.tenant,
+      ctx.config,
+      ctx.signingConfig!,
+      ctx.user!,
+      ctx.now
+    ),
 });

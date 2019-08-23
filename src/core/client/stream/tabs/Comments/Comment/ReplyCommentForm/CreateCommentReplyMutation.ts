@@ -22,7 +22,7 @@ import { CreateCommentReplyMutation as MutationTypes } from "coral-stream/__gene
 import { pick } from "lodash";
 import {
   incrementStoryCommentCounts,
-  isVisible,
+  isPublished,
   prependCommentEdgeToProfile,
 } from "../../helpers";
 
@@ -40,8 +40,8 @@ function sharedUpdater(
     .getLinkedRecord("edge")!;
   const status = commentEdge.getLinkedRecord("node")!.getValue("status");
 
-  // If comment is not visible, we don't need to add it.
-  if (!isVisible(status)) {
+  // If comment is not published, we don't need to add it.
+  if (!isPublished(status)) {
     return;
   }
 
@@ -114,7 +114,14 @@ graphql`
 graphql`
   fragment CreateCommentReplyMutation_viewer on User {
     role
+    badges
     createdAt
+    status {
+      current
+      ban {
+        active
+      }
+    }
   }
 `;
 /** end */
@@ -179,6 +186,7 @@ function commit(
               id: viewer.id,
               username: viewer.username,
               createdAt: viewer.createdAt,
+              badges: viewer.badges,
               ignoreable: false,
             },
             body: input.body,

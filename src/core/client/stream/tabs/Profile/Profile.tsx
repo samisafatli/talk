@@ -1,8 +1,10 @@
+import { Localized } from "fluent-react/compat";
 import React, { FunctionComponent, useCallback } from "react";
 
 import { graphql, useLocal } from "coral-framework/lib/relay";
 import { PropTypesOf } from "coral-framework/types";
 import { ProfileLocal } from "coral-stream/__generated__/ProfileLocal.graphql";
+import CLASSES from "coral-stream/classes";
 import UserBoxContainer from "coral-stream/common/UserBox";
 import {
   HorizontalGutter,
@@ -11,8 +13,9 @@ import {
   TabContent,
   TabPane,
 } from "coral-ui/components";
-import { Localized } from "fluent-react/compat";
 
+import ChangeEmailContainer from "./ChangeEmail";
+import ChangeUsernameContainer from "./ChangeUsername";
 import CommentHistoryContainer from "./CommentHistory";
 import SettingsContainer from "./Settings";
 
@@ -20,9 +23,14 @@ export interface ProfileProps {
   story: PropTypesOf<typeof CommentHistoryContainer>["story"];
   viewer: PropTypesOf<typeof UserBoxContainer>["viewer"] &
     PropTypesOf<typeof CommentHistoryContainer>["viewer"] &
+    PropTypesOf<typeof SettingsContainer>["viewer"] &
+    PropTypesOf<typeof ChangeUsernameContainer>["viewer"] &
+    PropTypesOf<typeof ChangeEmailContainer>["viewer"] &
     PropTypesOf<typeof SettingsContainer>["viewer"];
   settings: PropTypesOf<typeof UserBoxContainer>["settings"] &
-    PropTypesOf<typeof SettingsContainer>["settings"];
+    PropTypesOf<typeof ChangeEmailContainer>["settings"] &
+    PropTypesOf<typeof SettingsContainer>["settings"] &
+    PropTypesOf<typeof ChangeUsernameContainer>["settings"];
 }
 
 const Profile: FunctionComponent<ProfileProps> = props => {
@@ -37,18 +45,25 @@ const Profile: FunctionComponent<ProfileProps> = props => {
   );
   return (
     <HorizontalGutter spacing={5}>
-      <UserBoxContainer viewer={props.viewer} settings={props.settings} />
+      <HorizontalGutter spacing={2}>
+        <ChangeUsernameContainer
+          settings={props.settings}
+          viewer={props.viewer}
+        />
+        <ChangeEmailContainer settings={props.settings} viewer={props.viewer} />
+      </HorizontalGutter>
       <TabBar
         variant="secondary"
         activeTab={local.profileTab}
         onTabClick={onTabClick}
+        className={CLASSES.tabBarMyProfile.$root}
       >
-        <Tab tabID="MY_COMMENTS">
+        <Tab tabID="MY_COMMENTS" className={CLASSES.tabBarMyProfile.myComments}>
           <Localized id="profile-myCommentsTab">
             <span>My Comments</span>
           </Localized>
         </Tab>
-        <Tab tabID="SETTINGS">
+        <Tab tabID="SETTINGS" className={CLASSES.tabBarMyProfile.settings}>
           <Localized id="profile-settingsTab">
             <span>Settings</span>
           </Localized>

@@ -119,6 +119,14 @@ comments-userIgnorePopover-description =
 comments-userIgnorePopover-ignore = Ignore
 comments-userIgnorePopover-cancel = Cancel
 
+comments-userBanPopover-title = Ban {$username}?
+comments-userBanPopover-description =
+  Once banned, this user will no longer be able
+  to comment, use reactions, or report comments.
+  This comment will also be rejected.
+comments-userBanPopover-cancel = Cancel
+comments-userBanPopover-ban = Ban
+
 comments-moderationDropdown-popover =
   .description = A popover menu to moderate the comment
 comments-moderationDropdown-feature = Feature
@@ -127,6 +135,8 @@ comments-moderationDropdown-approve = Approve
 comments-moderationDropdown-approved = Approved
 comments-moderationDropdown-reject = Reject
 comments-moderationDropdown-rejected = Rejected
+comments-moderationDropdown-ban = Ban User
+comments-moderationDropdown-banned = Banned
 comments-moderationDropdown-goToModerate = Go to Moderate
 comments-moderationDropdown-caretButton =
   .aria-label = Moderate
@@ -173,6 +183,19 @@ profile-settings-changePassword-button = Change Password
 profile-settings-changePassword-updated =
   Your password has been updated
 
+profile-settings-download-comments-title = Download my comment history
+profile-settings-download-comments-description =
+  You will receive an email with a link to download your comment history.
+  You can make <strong>one download request every 14 days.</strong>
+profile-settings-download-comments-request =
+  Request comment history
+profile-settings-download-comments-request-icon =
+  .title = Request comment history
+profile-settings-download-comments-recentRequest =
+  Your most recent request: { $timeStamp }
+profile-settings-download-comments-timeOut =
+  You can submit another request in { framework-timeago-time }
+
 ## Report Comment Popover
 comments-reportPopover =
   .description = A dialog for reporting comments
@@ -205,6 +228,19 @@ comments-submitStatus-submittedAndWillBeReviewed =
 # Configure
 configure-configureQuery-errorLoadingProfile = Error loading configure
 configure-configureQuery-storyNotFound = Story not found
+
+## Change username
+profile-changeUsername-success = Your username has been successfully updated
+profile-changeUsername-edit = edit
+profile-changeUsername-heading = Edit your username
+profile-changeUsername-desc = Change the username that will appear on all of your past and future comments. <strong>Usernames can be changed once every { framework-timeago-time }.</strong>
+profile-changeUsername-current = Current username
+profile-changeUsername-newUsername-label = New username
+profile-changeUsername-confirmNewUsername-label = Confirm new username
+profile-changeUsername-cancel = Cancel
+profile-changeUsername-submit = <ButtonIcon>save</ButtonIcon> <span>Save</span>
+profile-changeUsername-recentChange = Your username has been changed in the last { framework-timeago-time }. You may change your username again on { $nextUpdate }
+profile-changeUsername-close = Close
 
 ## Comment Stream
 configure-stream-title = Configure this Comment Stream
@@ -247,8 +283,26 @@ configure-openStream-openStream = Open Stream
 comments-tombstone-ignore = This comment is hidden because you ignored {$username}
 
 suspendInfo-heading = Your account has been temporarily suspended from commenting.
-suspendInfo-info = 
+suspendInfo-info =
   In accordance with { $organization }'s community guidelines your
   account has been temporarily suspended. While suspended you will not
   be able to comment, respect or report comments. Please rejoin the
   conversation on { $until }
+
+profile-changeEmail-unverified = (Unverified)
+profile-changeEmail-edit = Edit
+profile-changeEmail-please-verify = Verify your email address
+profile-changeEmail-please-verify-details =
+  An email has been sent to { $email } to verify your account.
+  You must verify your new email address before it can be used for
+  signing into your account or for email notifications.
+profile-changeEmail-resend = Resend verification
+profile-changeEmail-heading = Edit your email address
+profile-changeEmail-desc = Change the email address used for signing in and for receiving communication about your account.
+profile-changeEmail-current = Current email
+profile-changeEmail-newEmail-label = New email address
+profile-changeEmail-password = Password
+profile-changeEmail-password-input =
+  .placeholder = Password
+profile-changeEmail-cancel = Cancel
+profile-changeEmail-submit = Save

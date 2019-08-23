@@ -11,7 +11,7 @@ email-subject-forgotPassword = Password Reset Request
 
 email-notification-template-ban =
   { $customMessage }<br /><br />
-  if you think this has been done in error, please contact our community team 
+  If you think this has been done in error, please contact our community team
   at <a data-l10n-name="organizationContactEmail" >{ $organizationContactEmail }</a>.
 
 email-subject-ban = Your account has been banned
@@ -23,6 +23,13 @@ email-notification-template-passwordChange =
   please contact our community team at <a data-l10n-name="organizationContactEmail" >{ $organizationContactEmail }</a>.
 
 email-subject-passwordChange = Your password has been changed
+
+email-subject-updateUsername = Your username has been changed
+
+email-notification-template-updateUsername =
+  Hello { $username },<br/><br/>
+  Thank you for updating your { $organizationName } commenter account information. The changes you made are effective immediately. <br /><br />
+  If you did not make this change please reach out to our community team at <a data-l10n-name="organizationContactEmail" >{ $organizationContactEmail }</a>.
 
 email-notification-template-suspend =
   { $customMessage }<br/><br/>
@@ -45,3 +52,8 @@ email-subject-invite = Coral Team invite
 email-notification-template-invite =
   You have been invited to join the { $organizationName } team on Coral. Finish
   setting up your account <a data-l10n-name="invite">here</a>.
+
+email-subject-downloadComments = Your comments are ready for download
+email-notification-template-downloadComments =
+  Your comments from { $organizationName } as of { $date } are now available for download.<br /><br />
+  <a data-l10n-name="downloadUrl">Download my comment archive</a>

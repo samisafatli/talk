@@ -2,6 +2,7 @@ import { graphql } from "react-relay";
 import { Environment } from "relay-runtime";
 
 import { BanUserMutation as MutationTypes } from "coral-admin/__generated__/BanUserMutation.graphql";
+import { getViewer } from "coral-framework/helpers";
 import {
   commitMutationPromiseNormalized,
   createMutation,
@@ -15,6 +16,7 @@ let clientMutationId = 0;
 const BanUserMutation = createMutation(
   "banUser",
   (environment: Environment, input: MutationInput<MutationTypes>) => {
+    const viewer = getViewer(environment)!;
     return commitMutationPromiseNormalized<MutationTypes>(environment, {
       mutation: graphql`
         mutation BanUserMutation($input: BanUserInput!) {
@@ -25,6 +27,14 @@ const BanUserMutation = createMutation(
                 current
                 ban {
                   active
+                  history {
+                    active
+                    createdAt
+                    createdBy {
+                      id
+                      username
+                    }
+                  }
                 }
               }
             }
@@ -49,6 +59,16 @@ const BanUserMutation = createMutation(
               )!.status.current.concat(GQLUSER_STATUS.BANNED),
               ban: {
                 active: true,
+                history: [
+                  {
+                    active: true,
+                    createdAt: new Date(),
+                    createdBy: {
+                      id: viewer.id,
+                      username: viewer.username,
+                    },
+                  },
+                ],
               },
             },
           },

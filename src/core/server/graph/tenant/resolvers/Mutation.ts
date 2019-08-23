@@ -137,8 +137,16 @@ export const Mutation: Required<GQLMutationTypeResolver<void>> = {
     ...(await ctx.mutators.Users.deactivateToken(input)),
     clientMutationId: input.clientMutationId,
   }),
+  updateUsername: async (source, { input }, ctx) => ({
+    user: await ctx.mutators.Users.updateUsername(input),
+    clientMutationId: input.clientMutationId,
+  }),
   updateUserUsername: async (source, { input }, ctx) => ({
     user: await ctx.mutators.Users.updateUserUsername(input),
+    clientMutationId: input.clientMutationId,
+  }),
+  updateEmail: async (source, { input }, ctx) => ({
+    user: await ctx.mutators.Users.updateEmail(input),
     clientMutationId: input.clientMutationId,
   }),
   updateUserEmail: async (source, { input }, ctx) => ({
@@ -175,6 +183,10 @@ export const Mutation: Required<GQLMutationTypeResolver<void>> = {
   }),
   removeUserIgnore: async (source, { input }, ctx) => ({
     user: await ctx.mutators.Users.removeIgnore(input),
+    clientMutationId: input.clientMutationId,
+  }),
+  requestCommentsDownload: async (sourc, { input }, ctx) => ({
+    user: await ctx.mutators.Users.requestCommentsDownload(input),
     clientMutationId: input.clientMutationId,
   }),
 };

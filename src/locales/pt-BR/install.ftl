@@ -5,7 +5,6 @@ install-nextButton-next = Próximo
 install-permittedDomains-finishInstall = Finalizar Instalação
 install-header-title = Assistente de instalação de Coral
 
-install-initialStep-copy = O restante da instalação do Coral levará cerca de dez minutos. Depois de concluir as três etapas a seguir, você terá uma instalação e fornecimento gratuitos do Mongo e do Redis.
 install-initialStep-getStarted = Iniciar
 
 install-addOrganization-stepTitle = Adicionar Detalhes da Organização
@@ -41,7 +40,6 @@ install-createYourAccount-confirmPasswordTextField =
 
 install-permittedDomains-stepTitle = Adicionar domínios permitidos
 install-permittedDomains-title =  Domínios Permitidos
-install-permittedDomains-description = Insira os domínios que você gostaria de permitir para Coral, por exemplo seus ambientes locais, de preparação e produção (ex. localhost: 3000, staging.domain.com, domain.com).
 install-permittedDomains-permittedDomains = Domínios Permitidos
 install-permittedDomains-permittedDomainsTextField =
   .placeholder = Domínios

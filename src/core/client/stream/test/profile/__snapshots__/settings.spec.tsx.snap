@@ -16,7 +16,7 @@ exports[`renders the empty settings pane 1`] = `
       <button
         aria-controls="tabPane-COMMENTS"
         aria-selected={false}
-        className="BaseButton-root Tab-button Tab-primary coral coral-tabBar-allComments"
+        className="BaseButton-root Tab-button Tab-primary coral coral-tabBar-tab coral-tabBar-comments"
         onBlur={[Function]}
         onClick={[Function]}
         onFocus={[Function]}
@@ -39,7 +39,7 @@ exports[`renders the empty settings pane 1`] = `
       <button
         aria-controls="tabPane-PROFILE"
         aria-selected={true}
-        className="BaseButton-root Tab-button Tab-primary Tab-active coral coral-tabBar-myProfile"
+        className="BaseButton-root Tab-button Tab-primary Tab-active coral coral-tabBar-tab coral-tabBar-myProfile"
         onBlur={[Function]}
         onClick={[Function]}
         onFocus={[Function]}
@@ -66,30 +66,24 @@ exports[`renders the empty settings pane 1`] = `
       className="Box-root HorizontalGutter-root HorizontalGutter-spacing-5"
     >
       <div
-        className="Box-root Flex-root"
+        className="Box-root HorizontalGutter-root HorizontalGutter-spacing-2"
       >
         <div
-          className="Flex-flex Flex-halfItemGutter Flex-wrap gutter"
+          className="Box-root HorizontalGutter-root HorizontalGutter-spacing-5"
+          data-testid="profile-changeUsername"
         >
           <div
-            className="Box-root Typography-root Typography-bodyCopy Typography-colorTextPrimary"
+            className="Box-root Flex-root Flex-flex Flex-alignBaseline"
           >
-            Signed in as 
-            <span
-              className="Box-root Typography-root Typography-bodyCopyBold Typography-colorTextPrimary"
+            <h1
+              className="Box-root Typography-root Typography-header2 Typography-colorTextPrimary"
             >
               Passivo
-            </span>
-            .
-          </div>
-          <div
-            className="Box-root Flex-root Box-root Typography-root Typography-bodyCopy Typography-colorTextPrimary Flex-flex"
-          >
-            <span>
-              Not you? 
-            </span>
+            </h1>
             <button
-              className="BaseButton-root Button-root Button-sizeSmall Button-colorPrimary Button-variantUnderlined"
+              className="BaseButton-root Button-root Button-sizeSmall Button-colorPrimary Button-variantRegular"
+              data-color="primary"
+              data-variant="regular"
               onBlur={[Function]}
               onClick={[Function]}
               onFocus={[Function]}
@@ -98,13 +92,47 @@ exports[`renders the empty settings pane 1`] = `
               onTouchEnd={[Function]}
               type="button"
             >
-              Sign Out
+              edit
+            </button>
+          </div>
+        </div>
+        <div
+          className="Box-root HorizontalGutter-root HorizontalGutter-spacing-5"
+          data-testid="profile-changeEmail"
+        >
+          <div
+            className="Box-root Flex-root Flex-flex Flex-alignCenter"
+          >
+            <p
+              className="Box-root Typography-root Typography-bodyCopy Typography-colorTextPrimary"
+            />
+            <span>
+               
+            </span>
+            <p
+              className="Box-root Typography-root Typography-bodyCopy Typography-colorTextSecondary"
+            >
+              (Unverified)
+            </p>
+            <button
+              className="BaseButton-root Button-root Button-sizeSmall Button-colorPrimary Button-variantRegular"
+              data-color="primary"
+              data-variant="regular"
+              onBlur={[Function]}
+              onClick={[Function]}
+              onFocus={[Function]}
+              onMouseOut={[Function]}
+              onMouseOver={[Function]}
+              onTouchEnd={[Function]}
+              type="button"
+            >
+              Edit
             </button>
           </div>
         </div>
       </div>
       <ul
-        className="TabBar-root TabBar-secondary"
+        className="TabBar-root TabBar-secondary coral coral-tabBarSecondary coral-tabBarMyProfile"
         role="tablist"
       >
         <li
@@ -115,7 +143,7 @@ exports[`renders the empty settings pane 1`] = `
           <button
             aria-controls="tabPane-MY_COMMENTS"
             aria-selected={false}
-            className="BaseButton-root Tab-button Tab-secondary"
+            className="BaseButton-root Tab-button Tab-secondary coral coral-tabBarSecondary-tab coral-tabBarMyProfile-myComments"
             onBlur={[Function]}
             onClick={[Function]}
             onFocus={[Function]}
@@ -138,7 +166,7 @@ exports[`renders the empty settings pane 1`] = `
           <button
             aria-controls="tabPane-SETTINGS"
             aria-selected={true}
-            className="BaseButton-root Tab-button Tab-secondary Tab-active"
+            className="BaseButton-root Tab-button Tab-secondary Tab-active coral coral-tabBarSecondary-tab coral-tabBarMyProfile-settings"
             onBlur={[Function]}
             onClick={[Function]}
             onFocus={[Function]}
@@ -254,11 +282,20 @@ Commenters you ignore will still be able to see your comments.
                     <div
                       className="Box-root Flex-root Flex-flex Flex-justifyFlexEnd"
                     >
-                      <p
-                        className="Box-root Typography-root Typography-bodyCopy Typography-colorTextPrimary"
+                      <button
+                        className="BaseButton-root Button-root Button-sizeRegular Button-colorPrimary Button-variantUnderlined"
+                        data-color="primary"
+                        data-variant="underlined"
+                        onBlur={[Function]}
+                        onClick={[Function]}
+                        onFocus={[Function]}
+                        onMouseOut={[Function]}
+                        onMouseOver={[Function]}
+                        onTouchEnd={[Function]}
+                        type="button"
                       >
                         Forgot your password?
-                      </p>
+                      </button>
                     </div>
                   </fieldset>
                   <fieldset
@@ -314,6 +351,8 @@ Commenters you ignore will still be able to see your comments.
                   >
                     <button
                       className="BaseButton-root Button-root Button-sizeRegular Button-colorPrimary Button-variantFilled Button-disabled"
+                      data-color="primary"
+                      data-variant="filled"
                       disabled={true}
                       onBlur={[Function]}
                       onFocus={[Function]}
@@ -328,6 +367,47 @@ Commenters you ignore will still be able to see your comments.
                 </fieldset>
               </div>
             </form>
+          </div>
+          <div
+            className="DownloadCommentsContainer-root"
+          >
+            <h1
+              className="Box-root Typography-root Typography-heading3 Typography-colorTextPrimary DownloadCommentsContainer-title"
+            >
+              Download my comment history
+            </h1>
+            <p
+              className="Box-root Typography-root Typography-bodyCopy Typography-colorTextPrimary DownloadCommentsContainer-description"
+            >
+              You will receive an email with a link to download your comment history.
+You can make 
+              <strong>
+                one download request every 14 days.
+              </strong>
+            </p>
+            <button
+              className="BaseButton-root Button-root Button-sizeSmall Button-colorRegular Button-variantOutlined"
+              data-color="regular"
+              data-variant="outlined"
+              onBlur={[Function]}
+              onClick={[Function]}
+              onFocus={[Function]}
+              onMouseOut={[Function]}
+              onMouseOver={[Function]}
+              onTouchEnd={[Function]}
+              type="button"
+            >
+              <span
+                aria-hidden="true"
+                className="Icon-root Icon-sm DownloadCommentsContainer-icon"
+                title="Request comment history"
+              >
+                file_download
+              </span>
+              <span>
+                Request comment history
+              </span>
+            </button>
           </div>
         </div>
       </section>

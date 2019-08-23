@@ -113,10 +113,22 @@ export const settingsWithoutLocalAuth = createFixture<GQLSettings>(
 
 export const baseUser = createFixture<GQLUser>({
   createdAt: "2018-02-06T18:24:00.000Z",
+  id: "base-user",
+  role: GQLUSER_ROLE.COMMENTER,
+  badges: [],
   status: {
     current: [GQLUSER_STATUS.ACTIVE],
+    ban: {
+      active: false,
+      history: [],
+    },
+    username: {
+      history: [],
+    },
     suspension: {
       active: false,
+      until: null,
+      history: [],
     },
   },
   ignoredUsers: [],
@@ -127,7 +139,72 @@ export const baseUser = createFixture<GQLUser>({
     },
   },
   ignoreable: true,
+  profiles: [
+    {
+      __typename: "LocalProfile",
+    },
+  ],
 });
+
+const yesterday = new Date();
+yesterday.setDate(yesterday.getDate() - 1);
+const weekago = new Date();
+weekago.setDate(yesterday.getDate() - 7);
+
+export const userWithNewUsername = createFixture<GQLUser>(
+  {
+    id: "new-user",
+    username: "u_original",
+    role: GQLUSER_ROLE.COMMENTER,
+    status: {
+      current: [GQLUSER_STATUS.ACTIVE],
+      username: {
+        history: [
+          {
+            username: "u_original",
+            createdAt: `${yesterday.toISOString()}`,
+            createdBy: { id: "new-user" },
+          },
+        ],
+      },
+    },
+  },
+  baseUser
+);
+
+export const userWithChangedUsername = createFixture<GQLUser>(
+  {
+    id: "changed-user",
+    username: "u_changed",
+    role: GQLUSER_ROLE.COMMENTER,
+    status: {
+      current: [GQLUSER_STATUS.ACTIVE],
+      username: {
+        history: [
+          {
+            username: "original",
+            createdAt: weekago.toISOString(),
+            createdBy: { id: "changed-user" },
+          },
+          {
+            username: "u_changed",
+            createdAt: yesterday.toISOString(),
+            createdBy: { id: "changed-user" },
+          },
+        ],
+      },
+    },
+  },
+  baseUser
+);
+
+export const userWithEmail = createFixture<GQLUser>(
+  {
+    id: "email-user",
+    email: "used-email@email.com",
+  },
+  baseUser
+);
 
 export const commenters = createFixtures<GQLUser>(
   [
@@ -375,7 +452,7 @@ export const baseStory = createFixture<GQLStory>({
     },
   },
   commentCounts: {
-    totalVisible: 0,
+    totalPublished: 0,
     tags: {
       FEATURED: 0,
     },

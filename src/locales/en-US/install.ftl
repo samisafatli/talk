@@ -5,7 +5,7 @@ install-nextButton-next = Next
 install-permittedDomains-finishInstall = Finish Install
 install-header-title = { -product-name } Installation Wizard
 
-install-initialStep-copy = The remainder of the { -product-name } installation will take about ten minutes. Once you complete the following three steps, you will have a free installation and provision Mongo and Redis.
+install-initialStep-theRemainder = The remainder of the installation wizard will take about 10 minutes. Once you are finished, you will have your own instance of { -product-name }.
 install-initialStep-getStarted = Get Started
 
 install-addOrganization-stepTitle = Add Organization Details
@@ -41,7 +41,11 @@ install-createYourAccount-confirmPasswordTextField =
 
 install-permittedDomains-stepTitle = Add Permitted Domains
 install-permittedDomains-title = Permitted Domains
-install-permittedDomains-description = Enter the domains you would like to permit for { -product-name }, e.g. your local, staging and production environments (ex. localhost:3000, staging.domain.com, domain.com).
+install-permittedDomains-description-with-scheme =
+  Enter the domains you would like to permit for { -product-name }, e.g.
+  your local, staging and production environments including the
+  scheme (ex. http://localhost:3000, https://staging.domain.com,
+  https://domain.com).
 install-permittedDomains-permittedDomains = Permitted Domains
 install-permittedDomains-permittedDomainsTextField =
   .placeholder = Domains

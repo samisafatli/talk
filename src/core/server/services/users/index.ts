@@ -2,6 +2,11 @@ import { DateTime } from "luxon";
 import { Db } from "mongodb";
 
 import {
+  ALLOWED_USERNAME_CHANGE_FREQUENCY,
+  DOWNLOAD_LIMIT_TIMEFRAME,
+} from "coral-common/constants";
+import { Config } from "coral-server/config";
+import {
   DuplicateEmailError,
   DuplicateUserError,
   EmailAlreadySetError,
@@ -14,9 +19,14 @@ import {
   UserAlreadySuspendedError,
   UserCannotBeIgnoredError,
   UsernameAlreadySetError,
+  UsernameUpdatedWithinWindowError,
   UserNotFoundError,
 } from "coral-server/errors";
-import { GQLUSER_ROLE } from "coral-server/graph/tenant/schema/__generated__/types";
+import {
+  GQLAuthIntegrations,
+  GQLUSER_ROLE,
+} from "coral-server/graph/tenant/schema/__generated__/types";
+import logger from "coral-server/logger";
 import { Tenant } from "coral-server/models/tenant";
 import {
   banUser,
@@ -33,6 +43,7 @@ import {
   retrieveUser,
   retrieveUserWithEmail,
   setUserEmail,
+  setUserLastDownloadedAt,
   setUserLocalProfile,
   setUserUsername,
   suspendUser,
@@ -50,8 +61,11 @@ import {
 } from "coral-server/models/user/helpers";
 import { userIsStaff } from "coral-server/models/user/helpers";
 import { MailerQueue } from "coral-server/queue/tasks/mailer";
+import { sendConfirmationEmail } from "coral-server/services/users/auth";
+
 import { JWTSigningConfig, signPATString } from "coral-server/services/jwt";
 
+import { generateDownloadLink } from "./download/download";
 import { validateEmail, validatePassword, validateUsername } from "./helpers";
 
 export type InsertUser = InsertUserInput;
@@ -360,23 +374,100 @@ export async function deactivateToken(
 }
 
 /**
- * updateUsername will update a given User's username.
+ * updateUsername will update the current users username.
+ *
+ * @param mongo mongo database to interact with
+ * @param mailer mailer queue instance
+ * @param tenant Tenant where the User will be interacted with
+ * @param user the User we are updating
+ * @param username the username that we are setting on the User
+ */
+export async function updateUsername(
+  mongo: Db,
+  mailer: MailerQueue,
+  tenant: Tenant,
+  user: User,
+  username: string,
+  now: Date
+) {
+  // Validate the username.
+  validateUsername(username);
+
+  const canUpdate = canUpdateLocalProfile(tenant, user);
+  if (!canUpdate) {
+    throw new Error("Cannot update profile due to tenant settings");
+  }
+
+  // Get the earliest date that the username could have been edited before to/
+  // allow it now.
+  const lastUsernameEditAllowed = DateTime.fromJSDate(now)
+    .plus({ seconds: -ALLOWED_USERNAME_CHANGE_FREQUENCY })
+    .toJSDate();
+
+  const { history } = user.status.username;
+  if (history.length > 1) {
+    // If the last update was made at a date sooner than the earliest edited
+    // date, then we know that the last edit was conducted within the time-frame
+    // already.
+    const lastUpdate = history[history.length - 1];
+    if (lastUpdate.createdAt > lastUsernameEditAllowed) {
+      throw new UsernameUpdatedWithinWindowError(lastUpdate.createdAt);
+    }
+  }
+
+  const updated = await updateUserUsername(
+    mongo,
+    tenant.id,
+    user.id,
+    username,
+    user.id
+  );
+
+  if (user.email) {
+    await mailer.add({
+      tenantID: tenant.id,
+      message: {
+        to: user.email,
+      },
+      template: {
+        name: "update-username",
+        context: {
+          username: user.username!,
+          organizationName: tenant.organization.name,
+          organizationURL: tenant.organization.url,
+          organizationContactEmail: tenant.organization.contactEmail,
+        },
+      },
+    });
+  } else {
+    logger.warn(
+      { id: user.id },
+      "Failed to send email: user does not have email address"
+    );
+  }
+
+  return updated;
+}
+
+/**
+ * updateUsernameByID will update a given User's username.
  *
  * @param mongo mongo database to interact with
  * @param tenant Tenant where the User will be interacted with
  * @param userID the User's ID that we are updating
  * @param username the username that we are setting on the User
  */
-export async function updateUsername(
+export async function updateUsernameByID(
   mongo: Db,
   tenant: Tenant,
   userID: string,
-  username: string
+  username: string,
+  createdBy: User
 ) {
   // Validate the username.
   validateUsername(username);
 
-  return updateUserUsername(mongo, tenant.id, userID, username);
+  return updateUserUsername(mongo, tenant.id, userID, username, createdBy.id);
 }
 
 /**
@@ -402,7 +493,96 @@ export async function updateRole(
 }
 
 /**
- * updateEmail will update the given User's email address. This should not
+ * enabledAuthenticationIntegrations returns enabled auth integrations for a tenant
+ * @param tenant Tenant where the User will be interacted with
+ * @param target whether to filter by stream or admin enabled. defaults to requiring both.
+ */
+function enabledAuthenticationIntegrations(
+  tenant: Tenant,
+  target?: "stream" | "admin"
+): string[] {
+  return Object.keys(tenant.auth.integrations).filter((key: string) => {
+    const { enabled, targetFilter } = tenant.auth.integrations[
+      key as keyof GQLAuthIntegrations
+    ];
+    if (target) {
+      return enabled && targetFilter[target];
+    }
+    return enabled && targetFilter.admin && targetFilter.stream;
+  });
+}
+
+/**
+ * canUpdateLocalProfile will determine if a user is permitted to update their email address.
+ * @param tenant Tenant where the User will be interacted with
+ * @param user the User that we are updating
+ */
+function canUpdateLocalProfile(tenant: Tenant, user: User): boolean {
+  if (!hasLocalProfile(user)) {
+    return false;
+  }
+
+  const streamAuthTypes = enabledAuthenticationIntegrations(tenant, "stream");
+
+  // user can update email if local auth is enabled or any integration other than sso is enabled
+  return (
+    streamAuthTypes.includes("local") ||
+    !(streamAuthTypes.length === 1 && streamAuthTypes[0] === "sso")
+  );
+}
+
+/**
+ * updateEmail will update the current User's email address.
+ * @param mongo mongo database to interact with
+ * @param tenant Tenant where the User will be interacted with
+ * @param mailer The mailer queue
+ * @param config Convict config
+ * @param user the User that we are updating
+ * @param email the email address that we are setting on the User
+ * @param password the users password for confirmation
+ */
+export async function updateEmail(
+  mongo: Db,
+  tenant: Tenant,
+  mailer: MailerQueue,
+  config: Config,
+  signingConfig: JWTSigningConfig,
+  user: User,
+  emailAddress: string,
+  password: string,
+  now = new Date()
+) {
+  const email = emailAddress.toLowerCase();
+  validateEmail(email);
+
+  const canUpdate = canUpdateLocalProfile(tenant, user);
+  if (!canUpdate) {
+    throw new Error("Cannot update profile due to tenant settings");
+  }
+
+  const passwordVerified = await verifyUserPassword(user, password);
+  if (!passwordVerified) {
+    // We throw a PasswordIncorrect error here instead of an
+    // InvalidCredentialsError because the current user is already signed in.
+    throw new PasswordIncorrect();
+  }
+
+  const updated = await updateUserEmail(mongo, tenant.id, user.id, email);
+
+  await sendConfirmationEmail(
+    mongo,
+    mailer,
+    tenant,
+    config,
+    signingConfig,
+    updated as Required<User>,
+    now
+  );
+  return updated;
+}
+
+/**
+ * updateUserEmail will update the given User's email address. This should not
  * trigger and email notifications as it's designed to be used by administrators
  * to update a user's email address.
  *
@@ -411,7 +591,7 @@ export async function updateRole(
  * @param userID the User's ID that we are updating
  * @param email the email address that we are setting on the User
  */
-export async function updateEmail(
+export async function updateEmailByID(
   mongo: Db,
   tenant: Tenant,
   userID: string,
@@ -420,7 +600,7 @@ export async function updateEmail(
   // Validate the email address.
   validateEmail(email);
 
-  return updateUserEmail(mongo, tenant.id, userID, email);
+  return updateUserEmail(mongo, tenant.id, userID, email, true);
 }
 
 /**
@@ -680,4 +860,60 @@ export async function removeIgnore(
   await removeUserIgnore(mongo, tenant.id, user.id, userID);
 
   return targetUser;
+}
+
+export async function requestCommentsDownload(
+  mongo: Db,
+  mailer: MailerQueue,
+  tenant: Tenant,
+  config: Config,
+  signingConfig: JWTSigningConfig,
+  user: User,
+  now: Date
+) {
+  // Check to see if the user is allowed to download this now.
+  if (
+    user.lastDownloadedAt &&
+    DateTime.fromJSDate(user.lastDownloadedAt)
+      .plus({ seconds: DOWNLOAD_LIMIT_TIMEFRAME })
+      .toSeconds() >= DateTime.fromJSDate(now).toSeconds()
+  ) {
+    throw new Error("requested download too early");
+  }
+
+  const downloadUrl = await generateDownloadLink(
+    user.id,
+    tenant,
+    config,
+    signingConfig,
+    now
+  );
+
+  await setUserLastDownloadedAt(mongo, tenant.id, user.id, now);
+
+  if (user.email) {
+    await mailer.add({
+      tenantID: tenant.id,
+      message: {
+        to: user.email,
+      },
+      template: {
+        name: "download-comments",
+        context: {
+          username: user.username!,
+          date: Intl.DateTimeFormat(tenant.locale).format(now),
+          downloadUrl,
+          organizationName: tenant.organization.name,
+          organizationURL: tenant.organization.url,
+        },
+      },
+    });
+  } else {
+    logger.error(
+      { userID: user.id },
+      "could not send download email because the user does not have an email address"
+    );
+  }
+
+  return user;
 }

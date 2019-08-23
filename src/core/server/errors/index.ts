@@ -4,10 +4,12 @@ import { FluentBundle } from "fluent/compat";
 import uuid from "uuid";
 import { VError } from "verror";
 
+import { ALLOWED_USERNAME_CHANGE_FREQUENCY } from "coral-common/constants";
 import { ERROR_CODES, ERROR_TYPES } from "coral-common/errors";
+import { reduceSeconds, UNIT } from "coral-common/helpers/i18n";
 import { translate } from "coral-server/services/i18n";
 
-import { Writeable } from "coral-common/types";
+import { Writable } from "coral-common/types";
 import { GQLUSER_AUTH_CONDITIONS } from "coral-server/graph/tenant/schema/__generated__/types";
 import { ERROR_TRANSLATIONS } from "./translations";
 
@@ -48,6 +50,11 @@ export interface CoralErrorExtensions {
 }
 
 export interface CoralErrorContext {
+  /**
+   * tenantID is the ID of the tenant that this Error is associated with.
+   */
+  tenantID?: string;
+
   /**
    * pub stores information that is used by the translation framework
    * to provide context to the error being emitted to pass publicly. Sensitive
@@ -163,8 +170,8 @@ export class CoralError extends VError {
     this.status = status;
 
     // Capture the context for the error.
-    const { pub = {}, pvt = {} } = context;
-    this.context = { pub, pvt };
+    const { pub = {}, pvt = {}, tenantID } = context;
+    this.context = { tenantID, pub, pvt };
 
     // Capture the extension parameters.
     this.id = id;
@@ -288,6 +295,24 @@ export class DuplicateEmailError extends CoralError {
 export class UsernameAlreadySetError extends CoralError {
   constructor() {
     super({ code: ERROR_CODES.USERNAME_ALREADY_SET });
+  }
+}
+
+export class UsernameUpdatedWithinWindowError extends CoralError {
+  constructor(lastUpdate: Date) {
+    const { scaled, unit } = reduceSeconds(ALLOWED_USERNAME_CHANGE_FREQUENCY, [
+      UNIT.DAYS,
+    ]);
+    super({
+      code: ERROR_CODES.USERNAME_UPDATED_WITHIN_WINDOW,
+      context: {
+        pub: {
+          lastUpdate,
+          unit,
+          value: scaled,
+        },
+      },
+    });
   }
 }
 
@@ -457,7 +482,7 @@ export class InternalDevelopmentError extends CoralError {
     bundle: FluentBundle | null
   ): CoralErrorExtensions {
     // Serialize the extensions from the public source.
-    const extensions = super.serializeExtensions(bundle) as Writeable<
+    const extensions = super.serializeExtensions(bundle) as Writable<
       CoralErrorExtensions
     >;
 
@@ -656,6 +681,24 @@ export class PasswordIncorrect extends CoralError {
   constructor() {
     super({
       code: ERROR_CODES.PASSWORD_INCORRECT,
+    });
+  }
+}
+
+export class PersistedQueryNotFound extends CoralError {
+  constructor(id: string) {
+    super({
+      code: ERROR_CODES.PERSISTED_QUERY_NOT_FOUND,
+      context: { pub: { id } },
+    });
+  }
+}
+
+export class RawQueryNotAuthorized extends CoralError {
+  constructor(tenantID: string, userID: string | null) {
+    super({
+      code: ERROR_CODES.RAW_QUERY_NOT_AUTHORIZED,
+      context: { tenantID, pvt: { userID } },
     });
   }
 }
