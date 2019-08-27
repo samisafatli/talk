@@ -11,6 +11,8 @@ import {
   downloadHandler,
   inviteCheckHandler,
   inviteHandler,
+  unsubscribeCheckHandler,
+  unsubscribeHandler,
 } from "coral-server/app/handlers";
 import { jsonMiddleware } from "coral-server/app/middleware/json";
 import { authenticate } from "coral-server/app/middleware/passport";
@@ -33,6 +35,9 @@ export function createNewAccountRouter(
 
   router.get("/invite", inviteCheckHandler(app));
   router.put("/invite", jsonMiddleware, inviteHandler(app));
+
+  router.get("/notifications/unsubscribe", unsubscribeCheckHandler(app));
+  router.delete("/notifications/unsubscribe", unsubscribeHandler(app));
 
   router.get("/downloadcheck", downloadCheckHandler(app));
   router.get("/download", adminDownloadHandler(app));
