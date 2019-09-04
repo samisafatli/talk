@@ -4,7 +4,7 @@ import { graphql } from "react-relay";
 import { withFragmentContainer } from "coral-framework/lib/relay";
 import { AccountSettingsContainer_settings } from "coral-stream/__generated__/AccountSettingsContainer_settings.graphql";
 import { AccountSettingsContainer_viewer } from "coral-stream/__generated__/AccountSettingsContainer_viewer.graphql";
-import { HorizontalGutter } from "coral-ui/components";
+import { HorizontalGutter, Typography } from "coral-ui/components";
 
 import ChangeEmailContainer from "./ChangeEmail";
 import ChangePasswordContainer from "./ChangePasswordContainer";
@@ -12,6 +12,7 @@ import ChangeUsernameContainer from "./ChangeUsername";
 import DeleteAccountContainer from "./DeleteAccount/DeleteAccountContainer";
 import DownloadCommentsContainer from "./DownloadCommentsContainer";
 
+import { Localized } from "fluent-react/compat";
 import styles from "./AccountSettingsContainer.css";
 
 interface Props {
@@ -23,16 +24,21 @@ const AccountSettingsContainer: FunctionComponent<Props> = ({
   viewer,
   settings,
 }) => (
-  <HorizontalGutter className={styles.root}>
-    <ChangeUsernameContainer settings={settings} viewer={viewer} />
-    <ChangeEmailContainer settings={settings} viewer={viewer} />
-    <ChangePasswordContainer settings={settings} />
-    {settings.accountFeatures.downloadComments && (
-      <DownloadCommentsContainer viewer={viewer} />
-    )}
-    {settings.accountFeatures.deleteAccount && (
-      <DeleteAccountContainer viewer={viewer} settings={settings} />
-    )}
+  <HorizontalGutter size="oneAndAHalf">
+    <Localized id="accountSettings-manage-account">
+      <Typography variant="heading1">Manage your account</Typography>
+    </Localized>
+    <HorizontalGutter className={styles.root}>
+      <ChangeUsernameContainer settings={settings} viewer={viewer} />
+      <ChangeEmailContainer settings={settings} viewer={viewer} />
+      <ChangePasswordContainer settings={settings} />
+      {settings.accountFeatures.downloadComments && (
+        <DownloadCommentsContainer viewer={viewer} />
+      )}
+      {settings.accountFeatures.deleteAccount && (
+        <DeleteAccountContainer viewer={viewer} settings={settings} />
+      )}
+    </HorizontalGutter>
   </HorizontalGutter>
 );
 
